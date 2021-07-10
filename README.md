@@ -5,7 +5,7 @@ node-red-contrib-azure-table-storage is a <a href="http://nodered.org" target="_
 
 It contains one Node-RED cloud node: **Azure Table Storage**
 
-![](images/flow-nodes.png)
+![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/flow-nodes.png)
 
 #### Azure Table Storage
 
@@ -102,40 +102,40 @@ Follow the instructions [here](http://nodered.org/docs/getting-started/installat
 
 2. Go to Hamburger Menu -> Import -> Clipboard
 
-    ![](images/import-clip.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/import-clip.png)
 
 3. Paste the following code into the "Import nodes" dialog
 
-    ![](images/import-nodes.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/import-nodes.png)
 
     ```
     [{"id":"95f88979.995298","type":"debug","z":"5e92f737.c60d68","name":"Log","active":true,"console":"false","complete":"true","x":843,"y":325,"wires":[]},{"id":"89d5f94e.906ea8","type":"Table Storage","z":"5e92f737.c60d68","name":"Azure Table Storage","x":645,"y":325,"wires":[["95f88979.995298"]]},{"id":"3429d17b.1ea3ce","type":"inject","z":"5e92f737.c60d68","name":"Payload","topic":"","payload":"{    \"tableName\": \"name\",   \"action\": \"I\",    \"partitionKey\": \"part2\",    \"rowKey\": \"row1\",    \"data\":          {           \"Column\": \"Value\"         } }","payloadType":"json","repeat":"","crontab":"","once":false,"x":424,"y":325,"wires":[["89d5f94e.906ea8"]]}]
     ```
 4. Double-click the Payload node
 
-    ![](images/payload-node.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/payload-node.png)
 
 5. Enter your desired payload, following the instructions, into the Payload field and click Done. Check "Inject once at start?" to insert data when you click Deploy.
 
-    ![](images/payload-node-input.PNG)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/payload-node-input.PNG)
 
 6. Double-click the Azure Table Storage node, enter your Storage Account Name and Storage Account Key and click Done.
 
-    ![](images/table-node.png) 
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/table-node.png) 
     
-    ![](images/table-node-input.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/table-node-input.png)
 
 7. Click Deploy
 
-    ![](images/deploy.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/deploy.png)
 
 8. Click the square button on the left side of the Register Payload node.
     
-    ![](images/payload-node.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/payload-node.png)
 
 9. Click on the debug tab to your right and you'll see the device's primary and secondary keys.
 
-    ![](images/table-node-output.png)
+    ![](https://raw.githubusercontent.com/javis86/node-red-contrib-azure-table-storage-aleph/main/images/table-node-output.png)
 
 
 ### References

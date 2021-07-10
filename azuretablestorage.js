@@ -8,7 +8,8 @@ module.exports = function (RED) {
         disconnected: { color: "red", text: "Disconnected" },
         sending: { color: "green", text: "Sending" },
         sent: { color: "blue", text: "Sent message" },
-        error: { color: "grey", text: "Error" }
+        error: { color: "grey", text: "Error" },
+        operational: { color: "blue", text: "Operational" }
     };    
 
     // Main function called by Node-RED    
@@ -21,11 +22,12 @@ module.exports = function (RED) {
         clientAccountName = node.credentials.accountname
         clientAccountKey = node.credentials.key;
         var clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
-
+        
         const setStatus = (status) => {
             node.status({ fill: status.color, shape: "dot", text: status.text });
         };
-
+        
+        setStatus(statusEnum.operational);
         const sendData = (entityClass) => {
             clientTableService.createTableIfNotExists(entityClass.tableName, function (error, result, response) {
                 if (error) {
@@ -44,7 +46,15 @@ module.exports = function (RED) {
                         node.log('trying to insert');
                         if (err) {
                             node.error('Error while trying to save data:' + err.toString());
+                            
+                            let newMsg = {};
+                            newMsg.payload = entityClass.partitionKey;
+                            newMsg.status = "Error";
+                            newMsg.message = err.toString();
+
+                            node.send(newMsg);
                             setStatus(statusEnum.error);
+
                         } else {
                             node.log(entityClass.partitionKey + ' saved.');
 
@@ -64,11 +74,24 @@ module.exports = function (RED) {
             clientTableService.retrieveEntity(entityClass.tableName, entityClass.partitionKey, entityClass.rowKey, function (err, result, response) {
                 if (err) {
                     node.error('Error while trying to read data:' + err.toString());
+                    
+                    let newMsg = {};
+                    newMsg.payload = entityClass.partitionKey;
+                    newMsg.status = "Error";
+                    newMsg.message = err.toString();
+                    node.send(newMsg);
+
                     setStatus(statusEnum.error);
                 } else {
                     node.log(result.data._);
+                    
+                    let newMsg = {};
+                    newMsg.payload = result.data._;
+                    newMsg.status = "OK";
+                    newMsg.partitionKey = entityClass.partitionKey;
+
+                    node.send(newMsg);
                     setStatus(statusEnum.sent);
-                    node.send(result.data._);
                 }
             });
         }
@@ -179,12 +202,10 @@ module.exports = function (RED) {
             switch (action) {
                 case "I":
                     node.log('Trying to insert entity');
-                    //createTable(entityClass, sendData);
                     sendData(entityClass);
                     break;
                 case "R":
                     node.log('Trying to read entity');
-                    //createTable(entityClass, readData);
                     readData(entityClass);
                     break;
                 case "DT":
@@ -197,12 +218,10 @@ module.exports = function (RED) {
                     break;
                 case "U":
                     node.log('trying to update entity');
-                    //createTable(entity, updateEntity);
                     updateEntity(entityClass);
                     break;
                 case "D":
                     node.log('trying to delete entity');
-                    //createTable(entity, deleteEntity);
                     deleteEntity(entityClass)
                     break;
                 default:
