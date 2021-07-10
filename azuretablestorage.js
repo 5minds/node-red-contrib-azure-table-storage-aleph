@@ -5,10 +5,10 @@ module.exports = function (RED) {
     var clientAccountKey = "";    
 
     var statusEnum = {
-        disconnected: { color: "red", text: "Disconnected" },
+        disconnected: { color: "gray", text: "Disconnected" },
         sending: { color: "green", text: "Sending" },
         sent: { color: "blue", text: "Sent message" },
-        error: { color: "grey", text: "Error" },
+        error: { color: "red", text: "Error" },
         operational: { color: "blue", text: "Operational" }
     };    
 
@@ -113,6 +113,7 @@ module.exports = function (RED) {
         const updateEntity = (entityClass) => {
             node.log('updating entity');
 
+            var entGen = Client.TableUtilities.entityGenerator;
             let entity = {
                 PartitionKey: entGen.String(entityClass.partitionKey),
                 RowKey: entGen.String(entityClass.rowKey),
@@ -134,6 +135,7 @@ module.exports = function (RED) {
         const deleteEntity = (entityClass) => {
             node.log('deleting entity');
 
+            var entGen = Client.TableUtilities.entityGenerator;
             let entity = {
                 PartitionKey: entGen.String(entityClass.partitionKey),
                 RowKey: entGen.String(entityClass.rowKey),
@@ -143,11 +145,24 @@ module.exports = function (RED) {
             clientTableService.deleteEntity(entityClass.tableName, entity, function (err, result, response) {
                 if (err) {
                     node.error('Error while trying to delete entity:' + err.toString());
+
+                    let newMsg = {};
+                    newMsg.payload = entityClass.partitionKey;
+                    newMsg.status = "Error";
+                    newMsg.message = err.toString();
+                    node.send(newMsg);
+
                     setStatus(statusEnum.error);
                 } else {
                     node.log('entity deleted');
+                    
+                    let newMsg = {};
+                    newMsg.payload = entityClass.partitionKey;
+                    newMsg.status = "OK";
+                    newMsg.partitionKey = entityClass.partitionKey;
+
+                    node.send(newMsg);
                     setStatus(statusEnum.sent);
-                    node.send('entity deleted');
                 }
             });
         }
