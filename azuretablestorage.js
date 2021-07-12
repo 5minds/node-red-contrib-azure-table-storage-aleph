@@ -22,12 +22,14 @@ module.exports = function (RED) {
         clientAccountName = node.credentials.accountname
         clientAccountKey = node.credentials.key;
         var clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
+        clientTableService.logger.level = Client.Logger.LogLevels.DEBUG;
         
         const setStatus = (status) => {
             node.status({ fill: status.color, shape: "dot", text: status.text });
         };
         
         setStatus(statusEnum.operational);
+
         const sendData = (entityClass) => {
             clientTableService.createTableIfNotExists(entityClass.tableName, function (error, result, response) {
                 if (error) {
@@ -44,24 +46,30 @@ module.exports = function (RED) {
 
                     clientTableService.insertEntity(entityClass.tableName, entity, function (err, result, response) {
                         node.log('trying to insert');
-                        if (err) {
-                            node.error('Error while trying to save data:' + err.toString());
+                        if (err) {                            
+                            let newMsg = {                                
+                                payload: {
+                                    partitionKey: entityClass.partitionKey,
+                                    rowKey: entityClass.rowKey,
+                                },
+                                status: "Error",
+                                message:  err.toString()
+                            };
                             
-                            let newMsg = {};
-                            newMsg.payload = entityClass.partitionKey;
-                            newMsg.status = "Error";
-                            newMsg.message = err.toString();
-
+                            node.error('Error while trying to save data:' + err.toString());
                             node.send(newMsg);
                             setStatus(statusEnum.error);
 
-                        } else {
+                        } else {                            
+                            let newMsg = {
+                                payload: {
+                                    partitionKey: entityClass.partitionKey,
+                                    rowKey: entityClass.rowKey,
+                                },
+                                status: "OK"      
+                            };
+                            
                             node.log(entityClass.partitionKey + ' saved.');
-
-                            let newMsg = {};
-                            newMsg.payload = entityClass.partitionKey;
-                            newMsg.status = "OK";                           
-
                             node.send(newMsg);
                             setStatus(statusEnum.sent);                            
                         }
@@ -72,24 +80,28 @@ module.exports = function (RED) {
 
         const readData = (entityClass) => {
             clientTableService.retrieveEntity(entityClass.tableName, entityClass.partitionKey, entityClass.rowKey, function (err, result, response) {
-                if (err) {
+                if (err) {                    
+                    let newMsg = {
+                        payload: {
+                            partitionKey: entityClass.partitionKey,
+                            rowKey: entityClass.rowKey,
+                        },
+                        status: "Error",
+                        message: err.toString()
+                    };
+                    
                     node.error('Error while trying to read data:' + err.toString());
-                    
-                    let newMsg = {};
-                    newMsg.payload = entityClass.partitionKey;
-                    newMsg.status = "Error";
-                    newMsg.message = err.toString();
                     node.send(newMsg);
-
                     setStatus(statusEnum.error);
-                } else {
-                    node.log(result.data._);
+                } else {                    
+                    let newMsg = {
+                        payload: result.data._,
+                        status: "OK",
+                        partitionKey: entityClass.partitionKey,
+                        rowKey: entityClass.rowKey
+                    };
                     
-                    let newMsg = {};
-                    newMsg.payload = result.data._;
-                    newMsg.status = "OK";
-                    newMsg.partitionKey = entityClass.partitionKey;
-
+                    node.log("Read Data...OK");
                     node.send(newMsg);
                     setStatus(statusEnum.sent);
                 }
@@ -102,10 +114,15 @@ module.exports = function (RED) {
                 if (err) {
                     node.error('Error while trying to delete table:' + err.toString());
                     setStatus(statusEnum.error);
-                } else {
+                } else {                    
+                    let newMsg = {
+                        payload: table,
+                        status: "OK"
+                    };                   
+                    
                     node.log('table ' + table +' deleted');
+                    node.send(newMsg);
                     setStatus(statusEnum.sent);
-                    node.send('table deleted');
                 }
             });
         }
@@ -117,17 +134,36 @@ module.exports = function (RED) {
             let entity = {
                 PartitionKey: entGen.String(entityClass.partitionKey),
                 RowKey: entGen.String(entityClass.rowKey),
-                data: entGen.String(entityClass.data),
+                data: entGen.String(JSON.stringify(entityClass.data)),
             };
 
             clientTableService.insertOrReplaceEntity(entityClass.tableName, entity, function (err, result, response) {
                 if (err) {
-                    node.error('Error while trying to update entity:' + err.toString());
+                    let newMsg = {
+                        payload: {
+                            partitionKey: entityClass.partitionKey,
+                            rowKey: entityClass.rowKey,
+                        },
+                        status: "Error",
+                        message: err.name + " - " + err.toString(),
+                        stack: err.stack
+                    };
+
+                    node.error('Error while trying to update' + err.toString());
+                    node.send(newMsg);
                     setStatus(statusEnum.error);
                 } else {
-                    node.log('entity updated');
+                    let newMsg = {
+                        payload: {
+                            partitionKey: entityClass.partitionKey,
+                            rowKey: entityClass.rowKey,
+                        },
+                        status: "OK"
+                    };
+
+                    node.log(entityClass.partitionKey + ' updated.');
+                    node.send(newMsg);
                     setStatus(statusEnum.sent);
-                    node.send('entity updated');
                 }
             });
         }
@@ -138,30 +174,34 @@ module.exports = function (RED) {
             var entGen = Client.TableUtilities.entityGenerator;
             let entity = {
                 PartitionKey: entGen.String(entityClass.partitionKey),
-                RowKey: entGen.String(entityClass.rowKey),
-                data: entGen.String(entityClass.data),
+                RowKey: entGen.String(entityClass.rowKey)
             };
 
             clientTableService.deleteEntity(entityClass.tableName, entity, function (err, result, response) {
-                if (err) {
-                    node.error('Error while trying to delete entity:' + err.toString());
-
-                    let newMsg = {};
-                    newMsg.payload = entityClass.partitionKey;
-                    newMsg.status = "Error";
-                    newMsg.message = err.toString();
-                    node.send(newMsg);
-
-                    setStatus(statusEnum.error);
-                } else {
-                    node.log('entity deleted');
+                if (err) {                    
+                    let newMsg = {
+                        payload: {
+                            partitionKey: entityClass.partitionKey,
+                            rowKey: entityClass.rowKey,
+                        },
+                        status: "Error",
+                        message: err.toString()
+                    };
                     
-                    let newMsg = {};
-                    newMsg.payload = entityClass.partitionKey;
-                    newMsg.status = "OK";
-                    newMsg.partitionKey = entityClass.partitionKey;
-
+                    node.send(newMsg);                    
+                    node.error('Error while trying to delete entity:' + err.toString());
+                    setStatus(statusEnum.error);
+                } else {                    
+                    let newMsg = {
+                        payload: {
+                            partitionKey: entityClass.partitionKey,
+                            rowKey: entityClass.rowKey,
+                        },
+                        status: "OK"
+                    };
+                    
                     node.send(newMsg);
+                    node.log('entity deleted');
                     setStatus(statusEnum.sent);
                 }
             });
@@ -185,7 +225,7 @@ module.exports = function (RED) {
             });
         }
 
-        var disconnectFrom = () => {
+        const disconnectFrom = () => {
             if (clientTableService) {
                 node.log('Disconnecting from Azure');
                 clientTableService.removeAllListeners();
@@ -194,7 +234,7 @@ module.exports = function (RED) {
             }
         }       
 
-        this.on('input', function (msg) {
+        this.on('input', (msg) => {
             let entityClass = {};
             let messageJSON = null;
 
@@ -247,9 +287,7 @@ module.exports = function (RED) {
             }    
         });
 
-        this.on('close', function () {
-            disconnectFrom(this);
-        });
+        this.on('close', () => disconnectFrom(this));
     }
 
     // Registration of the node into Node-RED

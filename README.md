@@ -1,6 +1,6 @@
-# node-red-contrib-azure-table-storage
+# node-red-contrib-azure-table-storage-aleph
 
-node-red-contrib-azure-table-storage is a <a href="http://nodered.org" target="_new">Node-RED</a> node that allows you to work with Azure Table Storage. You can do all CRUD into Table Storage.
+node-red-contrib-azure-table-storage-alpeh is a <a href="http://nodered.org" target="_new">Node-RED</a> node that allows you to work with Azure Table Storage. You can do all CRUD into Table Storage.
 
 
 It contains one Node-RED cloud node: **Azure Table Storage**
@@ -72,7 +72,7 @@ This node allows you to do CRUD into Azure Table Storage.  It has the following 
   "fromcolumn": "from", 
   "where": "where"
 }
-
+```
  
 ### To delete table
 ```
@@ -86,8 +86,8 @@ This node allows you to do CRUD into Azure Table Storage.  It has the following 
 ## Installation
 
 ```
-npm install -g node-red-contrib-azure-table-storage
-
+npm install -g node-red-contrib-azure-table-storage.aleph
+```
 
 ## How to Use
 
