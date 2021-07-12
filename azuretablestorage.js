@@ -1,8 +1,8 @@
 module.exports = function (RED) {
 
-    var Client = require('azure-storage');    
+    var Client = require('azure-storage');
     var clientAccountName = "";
-    var clientAccountKey = "";    
+    var clientAccountKey = "";
 
     var statusEnum = {
         disconnected: { color: "gray", text: "Disconnected" },
@@ -10,12 +10,12 @@ module.exports = function (RED) {
         sent: { color: "blue", text: "Sent message" },
         error: { color: "red", text: "Error" },
         operational: { color: "blue", text: "Operational" }
-    };    
+    };
 
     // Main function called by Node-RED    
     function AzureTableStorage(config) {
         // Store node for further use
-        let node = this;        
+        let node = this;
 
         // Create the Node-RED node
         RED.nodes.createNode(this, config);
@@ -23,12 +23,35 @@ module.exports = function (RED) {
         clientAccountKey = node.credentials.key;
         var clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
         clientTableService.logger.level = Client.Logger.LogLevels.DEBUG;
-        
+
         const setStatus = (status) => {
             node.status({ fill: status.color, shape: "dot", text: status.text });
         };
-        
+
         setStatus(statusEnum.operational);
+
+        const formatEntityWithGenerator = (entityClass) => {
+            var entGen = Client.TableUtilities.entityGenerator;
+            var entity = {
+                PartitionKey: entGen.String(entityClass.partitionKey),
+                RowKey: entGen.String(entityClass.rowKey),
+            };
+
+            // Map data as column if object
+            if (entityClass.data === Object(entityClass.data)) {
+                for (var key in entityClass.data) {
+                    if (entityClass.data.hasOwnProperty(key)) {
+                        console.log(key + " -> " + entityClass.data[key]);
+                        entity[key] = entGen.String(entityClass.data[key])
+                    }
+                }
+            }
+            else {
+                entity.data = entGen.String(entityClass.data);
+            }
+
+            return entity;
+        };
 
         const sendData = (entityClass) => {
             clientTableService.createTableIfNotExists(entityClass.tableName, function (error, result, response) {
@@ -37,50 +60,44 @@ module.exports = function (RED) {
                 }
                 else {
                     // Create a message and send it to the Azure Table Storage
-                    var entGen = Client.TableUtilities.entityGenerator;
-                    var entity = {
-                        PartitionKey: entGen.String(entityClass.partitionKey),
-                        RowKey: entGen.String(entityClass.rowKey),
-                        data: entGen.String(JSON.stringify(entityClass.data)),
-                    };
+                    let entity = formatEntityWithGenerator(entityClass);
 
                     clientTableService.insertEntity(entityClass.tableName, entity, function (err, result, response) {
                         node.log('trying to insert');
-                        if (err) {                            
-                            let newMsg = {                                
-                                payload: {
-                                    partitionKey: entityClass.partitionKey,
-                                    rowKey: entityClass.rowKey,
-                                },
-                                status: "Error",
-                                message:  err.toString()
-                            };
-                            
-                            node.error('Error while trying to save data:' + err.toString());
-                            node.send(newMsg);
-                            setStatus(statusEnum.error);
-
-                        } else {                            
+                        if (err) {
                             let newMsg = {
                                 payload: {
                                     partitionKey: entityClass.partitionKey,
                                     rowKey: entityClass.rowKey,
                                 },
-                                status: "OK"      
+                                status: "Error",
+                                message: err.toString()
                             };
-                            
+
+                            node.error('Error while trying to save data:' + err.toString());
+                            node.send(newMsg);
+                            setStatus(statusEnum.error);
+                        } else {
+                            let newMsg = {
+                                payload: {
+                                    partitionKey: entityClass.partitionKey,
+                                    rowKey: entityClass.rowKey,
+                                },
+                                status: "OK"
+                            };
+
                             node.log(entityClass.partitionKey + ' saved.');
                             node.send(newMsg);
-                            setStatus(statusEnum.sent);                            
+                            setStatus(statusEnum.sent);
                         }
                     });
                 }
-            });           
+            });
         };
 
         const readData = (entityClass) => {
             clientTableService.retrieveEntity(entityClass.tableName, entityClass.partitionKey, entityClass.rowKey, function (err, result, response) {
-                if (err) {                    
+                if (err) {
                     let newMsg = {
                         payload: {
                             partitionKey: entityClass.partitionKey,
@@ -89,18 +106,18 @@ module.exports = function (RED) {
                         status: "Error",
                         message: err.toString()
                     };
-                    
+
                     node.error('Error while trying to read data:' + err.toString());
                     node.send(newMsg);
                     setStatus(statusEnum.error);
-                } else {                    
+                } else {
                     let newMsg = {
-                        payload: result.data._,
+                        payload: result,
                         status: "OK",
                         partitionKey: entityClass.partitionKey,
                         rowKey: entityClass.rowKey
                     };
-                    
+
                     node.log("Read Data...OK");
                     node.send(newMsg);
                     setStatus(statusEnum.sent);
@@ -114,13 +131,13 @@ module.exports = function (RED) {
                 if (err) {
                     node.error('Error while trying to delete table:' + err.toString());
                     setStatus(statusEnum.error);
-                } else {                    
+                } else {
                     let newMsg = {
                         payload: table,
                         status: "OK"
-                    };                   
-                    
-                    node.log('table ' + table +' deleted');
+                    };
+
+                    node.log('table ' + table + ' deleted');
                     node.send(newMsg);
                     setStatus(statusEnum.sent);
                 }
@@ -129,13 +146,7 @@ module.exports = function (RED) {
 
         const updateEntity = (entityClass) => {
             node.log('updating entity');
-
-            var entGen = Client.TableUtilities.entityGenerator;
-            let entity = {
-                PartitionKey: entGen.String(entityClass.partitionKey),
-                RowKey: entGen.String(entityClass.rowKey),
-                data: entGen.String(JSON.stringify(entityClass.data)),
-            };
+            let entity = formatEntityWithGenerator(entityClass);
 
             clientTableService.insertOrReplaceEntity(entityClass.tableName, entity, function (err, result, response) {
                 if (err) {
@@ -178,7 +189,7 @@ module.exports = function (RED) {
             };
 
             clientTableService.deleteEntity(entityClass.tableName, entity, function (err, result, response) {
-                if (err) {                    
+                if (err) {
                     let newMsg = {
                         payload: {
                             partitionKey: entityClass.partitionKey,
@@ -187,11 +198,11 @@ module.exports = function (RED) {
                         status: "Error",
                         message: err.toString()
                     };
-                    
-                    node.send(newMsg);                    
+
+                    node.send(newMsg);
                     node.error('Error while trying to delete entity:' + err.toString());
                     setStatus(statusEnum.error);
-                } else {                    
+                } else {
                     let newMsg = {
                         payload: {
                             partitionKey: entityClass.partitionKey,
@@ -199,7 +210,7 @@ module.exports = function (RED) {
                         },
                         status: "OK"
                     };
-                    
+
                     node.send(newMsg);
                     node.log('entity deleted');
                     setStatus(statusEnum.sent);
@@ -208,19 +219,35 @@ module.exports = function (RED) {
         }
 
 
-        var queryEntity = function (table, fromcolumn, where, selectdata) {
+        const queryEntity = (entityClass) => {
             node.log('query entity');
+
+            let top = entityClass.top ? entityClass.top : 0;
+
             var query = new Client.TableQuery()
-                .top(1)
+                .top(top)
                 .where(entityClass.fromcolumn + ' eq ?', entityClass.where);
+
             clientTableService.queryEntities(entityClass.tableName, query, null, function (err, result, response) {
                 if (err) {
-                    node.error('Error while trying to query entity:' + err.toString());
+                    let newMsg = {
+                        payload: entityClass,
+                        status: "Error",
+                        message: err.toString()
+                    };
+
+                    node.error('Error while trying to save data:' + err.toString());
+                    node.send(newMsg);
                     setStatus(statusEnum.error);
                 } else {
-                    //node.log(JSON.stringify(result.entries.data));
-                    //setStatus(statusEnum.sent);
-                    //node.send(result.entries.data._);
+                    let newMsg = {
+                        payload: result.entries,
+                        status: "OK"
+                    };
+
+                    node.log("queried " + entityClass.tableName + "...OK");
+                    node.send(newMsg);
+                    setStatus(statusEnum.sent);
                 }
             });
         }
@@ -232,7 +259,7 @@ module.exports = function (RED) {
                 clientTableService = null;
                 setStatus(statusEnum.disconnected);
             }
-        }       
+        }
 
         this.on('input', (msg) => {
             let entityClass = {};
@@ -268,8 +295,8 @@ module.exports = function (RED) {
                     deleteTable(entityClass.tableName);
                     break;
                 case "Q":
-                    //node.log('Trying to query data');
-                    //queryEntity(messageJSON.tableName, messageJSON.fromColumn, messageJSON.where, messageJSON.selectData);
+                    node.log('Trying to query data');
+                    queryEntity(entityClass);
                     break;
                 case "U":
                     node.log('trying to update entity');
@@ -284,7 +311,7 @@ module.exports = function (RED) {
                     node.error('action was not detected');
                     setStatus(statusEnum.error);
                     break;
-            }    
+            }
         });
 
         this.on('close', () => disconnectFrom(this));
@@ -299,5 +326,5 @@ module.exports = function (RED) {
         defaults: {
             name: { value: "Azure Table Storage" },
         }
-    });    
+    });
 }

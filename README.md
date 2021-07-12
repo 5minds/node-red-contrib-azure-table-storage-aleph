@@ -1,7 +1,7 @@
 # node-red-contrib-azure-table-storage-aleph
+[![npm version](https://badge.fury.io/js/node-red-contrib-azure-table-storage-aleph.svg)](https://badge.fury.io/js/node-red-contrib-azure-table-storage-aleph)
 
-node-red-contrib-azure-table-storage-alpeh is a <a href="http://nodered.org" target="_new">Node-RED</a> node that allows you to work with Azure Table Storage. You can do all CRUD into Table Storage.
-
+node-red-contrib-azure-table-storage-aleph is a <a href="http://nodered.org" target="_new">Node-RED</a> node that allows you to work with Azure Table Storage. You can do all CRUD into Table Storage.
 
 It contains one Node-RED cloud node: **Azure Table Storage**
 
@@ -70,9 +70,11 @@ This node allows you to do CRUD into Azure Table Storage.  It has the following 
   "action": "Q", 
   "selectdata": "columnName", 
   "fromcolumn": "from", 
-  "where": "where"
+  "where": "equalCondition",
+  "top": 5
 }
 ```
+"top" can be 0 or null to retrieve all matches
  
 ### To delete table
 ```
@@ -86,11 +88,10 @@ This node allows you to do CRUD into Azure Table Storage.  It has the following 
 ## Installation
 
 ```
-npm install -g node-red-contrib-azure-table-storage.aleph
+npm install -g node-red-contrib-azure-table-storage-aleph
 ```
 
 ## How to Use
-
 
 
 ### Node-RED Setup
@@ -139,6 +140,6 @@ Follow the instructions [here](http://nodered.org/docs/getting-started/installat
 
 
 ### References
-You can read more about Azure Storage [here](https://azure.microsoft.com/pt-br/documentation/services/storage/).
+You can read more about Azure Storage [here](https://docs.microsoft.com/azure/storage/).
 
 
