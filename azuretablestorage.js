@@ -1,8 +1,6 @@
 module.exports = function (RED) {
 
     var Client = require('azure-storage');
-    var clientAccountName = "";
-    var clientAccountKey = "";
 
     var statusEnum = {
         disconnected: { color: "gray", text: "Disconnected" },
@@ -14,15 +12,16 @@ module.exports = function (RED) {
 
     // Main function called by Node-RED    
     function AzureTableStorage(config) {
-        // Store node for further use
         let node = this;
-
         // Create the Node-RED node
         RED.nodes.createNode(this, config);
-        clientAccountName = node.credentials.accountname
-        clientAccountKey = node.credentials.key;
-        var clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
-        clientTableService.logger.level = Client.Logger.LogLevels.DEBUG;
+        
+        let clientAccountName = node.credentials.accountname
+        let clientAccountKey = node.credentials.key;
+        let clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
+        
+        if (config.debug == true)
+            clientTableService.logger.level = Client.Logger.LogLevels.DEBUG;
 
         const setStatus = (status) => {
             node.status({ fill: status.color, shape: "dot", text: status.text });
@@ -41,7 +40,6 @@ module.exports = function (RED) {
             if (entityClass.data === Object(entityClass.data)) {
                 for (var key in entityClass.data) {
                     if (entityClass.data.hasOwnProperty(key)) {
-                        console.log(key + " -> " + entityClass.data[key]);
                         entity[key] = entGen.String(entityClass.data[key])
                     }
                 }
@@ -321,10 +319,11 @@ module.exports = function (RED) {
     RED.nodes.registerType("Aleph Table Storage", AzureTableStorage, {
         credentials: {
             accountname: { type: "text" },
-            key: { type: "text" },
+            key: { type: "text" }
         },
         defaults: {
-            name: { value: "Azure Table Storage" },
+            name: { value: "Aleph Table Storage" },
+            debug: { value: false }
         }
     });
 }
