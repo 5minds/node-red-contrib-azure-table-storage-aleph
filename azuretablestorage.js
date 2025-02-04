@@ -16,8 +16,14 @@ module.exports = function (RED) {
         // Create the Node-RED node
         RED.nodes.createNode(this, config);
         
-        let clientAccountName = node.credentials.accountname
+        /*
+        let clientAccountName = node.credentials.accountname;
         let clientAccountKey = node.credentials.key;
+        */
+
+        let clientAccountName =  RED.util.evaluateNodeProperty(config.accountname, config.accountname_type, node);
+        let clientAccountKey =  RED.util.evaluateNodeProperty(config.key, config.key_type, node);
+
         let clientTableService = Client.createTableService(clientAccountName, clientAccountKey);
         
         if (config.debug == true)

@@ -4,7 +4,11 @@
         color: '#00abec',
         defaults: {
             name: { value: "Azure Table Storage" },
-            debug: { value: false }
+            debug: { value: false },
+            accountname: { value: "", required: true },
+            accountname_type: { value: "str" },
+            key: { value: "", required: true },
+            key_type: { value: "str" },
         },
         inputs: 1,
         outputs: 1,
@@ -12,10 +16,32 @@
         label: function () {
             return this.name || "Azure Table Storage";
         },
-        credentials: {
-            accountname: { type: "text" },
-            key: { type: "text" }
-        }
+        oneditprepare: function () {
+            $('#node-input-accountname').typedInput({
+                default: 'str',
+                types: ['str', 'cred', 'env'],
+            });
+
+            $('#node-input-accountname').typedInput('value', this.accountname);
+            $('#node-input-accountname').typedInput('type', this.accountname_type);
+
+
+            $('#node-input-key').typedInput({
+                default: 'str',
+                types: ['str', 'cred', 'env'],
+            });
+
+            $('#node-input-key').typedInput('value', this.key);
+            $('#node-input-key').typedInput('type', this.key_type);
+
+        },
+        oneditsave: function () {
+            this.accountname = $('#node-input-accountname').typedInput('value');
+            this.accountname_type = $('#node-input-accountname').typedInput('type');
+
+            this.key = $('#node-input-key').typedInput('value');
+            this.key_type = $('#node-input-key').typedInput('type');
+        },
     });
 </script>
 

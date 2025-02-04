@@ -20,6 +20,11 @@ $RECYCLE.BIN/
 # Node.js dependencies
 node_modules
 node_modules/*
+# Lock files should not be committed
+package-lock.json
+# Add nodered folder for docker container
+nodered/*
+!nodered/.gitkeep
 
 # Tar G-Zipped files
 *.tgz
@@ -57,3 +62,4 @@ Temporary Items
 
 # VS Code
 .vscode
+!.vscode/lauch.json
