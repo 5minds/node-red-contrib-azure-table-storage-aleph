@@ -63,3 +63,7 @@ Temporary Items
 # VS Code
 .vscode
 !.vscode/lauch.json
+
+====
+# env file
+.env

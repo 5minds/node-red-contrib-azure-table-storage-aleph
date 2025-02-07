@@ -11,6 +11,8 @@ services:
     environment:
       # start node-red with debugger port open
       - NODE_OPTIONS=--inspect=0.0.0.0:9229
+    env_file:
+      - .env
     volumes:
       # required for mapping the current source into the directory
       - ./.:/package_src/
