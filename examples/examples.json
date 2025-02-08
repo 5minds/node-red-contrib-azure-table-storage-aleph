@@ -1,0 +1,145 @@
+[
+    {
+        "id": "088c9d6fa558f4da",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f0c8fc28bdd6d726",
+        "type": "group",
+        "z": "088c9d6fa558f4da",
+        "name": "",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "ffbb09bc396a57e2",
+            "edcf5d1a57d2029b",
+            "312af8c7422dd941",
+            "381b93bddf50f57e",
+            "1c28feb1b37b42c0"
+        ],
+        "x": 34,
+        "y": 259,
+        "w": 652,
+        "h": 202
+    },
+    {
+        "id": "ffbb09bc396a57e2",
+        "type": "Aleph Table Storage",
+        "z": "088c9d6fa558f4da",
+        "g": "f0c8fc28bdd6d726",
+        "name": "Azure Table Storage",
+        "debug": false,
+        "accountname": "AZURE_ACCOUNTNAME",
+        "accountname_type": "env",
+        "key": "AZURE_KEY",
+        "key_type": "env",
+        "x": 380,
+        "y": 300,
+        "wires": [
+            [
+                "312af8c7422dd941"
+            ]
+        ]
+    },
+    {
+        "id": "edcf5d1a57d2029b",
+        "type": "inject",
+        "z": "088c9d6fa558f4da",
+        "g": "f0c8fc28bdd6d726",
+        "name": "update (hello)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"tableName\":\"test5minds\",\"action\":\"U\",\"partitionKey\":\"p_key_01\",\"rowKey\":\"r_key_01\",\"data\":{\"hello\":\"world\"}}",
+        "payloadType": "json",
+        "x": 150,
+        "y": 300,
+        "wires": [
+            [
+                "ffbb09bc396a57e2"
+            ]
+        ]
+    },
+    {
+        "id": "312af8c7422dd941",
+        "type": "debug",
+        "z": "088c9d6fa558f4da",
+        "g": "f0c8fc28bdd6d726",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "381b93bddf50f57e",
+        "type": "inject",
+        "z": "088c9d6fa558f4da",
+        "g": "f0c8fc28bdd6d726",
+        "name": "read",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"tableName\":\"test5minds\",\"action\":\"R\",\"partitionKey\":\"p_key_01\",\"rowKey\":\"r_key_01\"}",
+        "payloadType": "json",
+        "x": 170,
+        "y": 420,
+        "wires": [
+            [
+                "ffbb09bc396a57e2"
+            ]
+        ]
+    },
+    {
+        "id": "1c28feb1b37b42c0",
+        "type": "inject",
+        "z": "088c9d6fa558f4da",
+        "g": "f0c8fc28bdd6d726",
+        "name": "update (foo)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"tableName\":\"test5minds\",\"action\":\"U\",\"partitionKey\":\"p_key_01\",\"rowKey\":\"r_key_01\",\"data\":{\"foo\":\"bar\"}}",
+        "payloadType": "json",
+        "x": 150,
+        "y": 360,
+        "wires": [
+            [
+                "ffbb09bc396a57e2"
+            ]
+        ]
+    }
+]

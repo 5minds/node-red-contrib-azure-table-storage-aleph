@@ -18,7 +18,8 @@
   "node-red": {
     "nodes": {
       "Azure": "azuretablestorage.js"
-    }
+    },
+    "examples": "examples"
   },
   "repository": {
     "type": "git",
@@ -31,9 +32,9 @@
       "url": "https://github.com/javis86"
     },
     {
-        "name": "Martin Moellenbeck",
-        "email": "Martin.Moellenbeck@5Minds.de",
-        "url": "https://github.com/5minds"
+      "name": "Martin Moellenbeck",
+      "email": "Martin.Moellenbeck@5Minds.de",
+      "url": "https://github.com/5minds"
     }
   ]
 }
