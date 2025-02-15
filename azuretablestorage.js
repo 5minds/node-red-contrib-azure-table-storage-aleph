@@ -16,11 +16,6 @@ module.exports = function (RED) {
         // Create the Node-RED node
         RED.nodes.createNode(this, config);
         
-        /*
-        let clientAccountName = node.credentials.accountname;
-        let clientAccountKey = node.credentials.key;
-        */
-
         let clientAccountName =  RED.util.evaluateNodeProperty(config.accountname, config.accountname_type, node);
         let clientAccountKey =  RED.util.evaluateNodeProperty(config.key, config.key_type, node);
 
@@ -57,7 +52,7 @@ module.exports = function (RED) {
             return entity;
         };
 
-        const sendData = (entityClass) => {
+        const sendData = (entityClass, msg) => {
             clientTableService.createTableIfNotExists(entityClass.tableName, function (error, result, response) {
                 if (error) {
                     node.error(error);
@@ -69,29 +64,25 @@ module.exports = function (RED) {
                     clientTableService.insertEntity(entityClass.tableName, entity, function (err, result, response) {
                         node.log('trying to insert');
                         if (err) {
-                            let newMsg = {
-                                payload: {
-                                    partitionKey: entityClass.partitionKey,
-                                    rowKey: entityClass.rowKey,
-                                },
-                                status: "Error",
-                                message: err.toString()
+                            msg.payload = {
+                                partitionKey: entityClass.partitionKey,
+                                rowKey: entityClass.rowKey
                             };
+                            msg.status = "Error";
+                            msg.message = err.toString();
 
                             node.error('Error while trying to save data:' + err.toString());
-                            node.send(newMsg);
+                            node.send(msg);
                             setStatus(statusEnum.error);
                         } else {
-                            let newMsg = {
-                                payload: {
-                                    partitionKey: entityClass.partitionKey,
-                                    rowKey: entityClass.rowKey,
-                                },
-                                status: "OK"
+                            msg.payload = {
+                                partitionKey: entityClass.partitionKey,
+                                rowKey: entityClass.rowKey
                             };
+                            msg.status = "OK";
 
                             node.log(entityClass.partitionKey + ' saved.');
-                            node.send(newMsg);
+                            node.send(msg);
                             setStatus(statusEnum.sent);
                         }
                     });
@@ -99,91 +90,81 @@ module.exports = function (RED) {
             });
         };
 
-        const readData = (entityClass) => {
+        const readData = (entityClass, msg) => {
             clientTableService.retrieveEntity(entityClass.tableName, entityClass.partitionKey, entityClass.rowKey, function (err, result, response) {
                 if (err) {
-                    let newMsg = {
-                        payload: {
-                            partitionKey: entityClass.partitionKey,
-                            rowKey: entityClass.rowKey,
-                        },
-                        status: "Error",
-                        message: err.toString()
-                    };
-
-                    node.error('Error while trying to read data:' + err.toString());
-                    node.send(newMsg);
-                    setStatus(statusEnum.error);
-                } else {
-                    let newMsg = {
-                        payload: result,
-                        status: "OK",
+                    msg.payload = {
                         partitionKey: entityClass.partitionKey,
                         rowKey: entityClass.rowKey
                     };
+                    msg.status = "Error";
+                    msg.message = err.toString();
+
+                    node.error('Error while trying to read data:' + err.toString());
+                    node.send(msg);
+                    setStatus(statusEnum.error);
+                } else {
+                    msg.payload = result;
+                    msg.status = "OK";
+                    msg.partitionKey = entityClass.partitionKey;
+                    msg.rowKey = entityClass.rowKey;
 
                     node.log("Read Data...OK");
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.sent);
                 }
             });
         }
 
-        const deleteTable = (table) => {
+        const deleteTable = (table, msg) => {
             node.log("Deleting table");
             clientTableService.deleteTable(table, function (err) {
                 if (err) {
                     node.error('Error while trying to delete table:' + err.toString());
                     setStatus(statusEnum.error);
                 } else {
-                    let newMsg = {
-                        payload: table,
-                        status: "OK"
-                    };
+                    msg.payload = table;
+                    msg.status = "OK";
 
                     node.log('table ' + table + ' deleted');
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.sent);
                 }
             });
         }
 
-        const updateEntity = (entityClass) => {
+        const updateEntity = (entityClass, msg) => {
             node.log('updating entity');
             let entity = formatEntityWithGenerator(entityClass);
 
             clientTableService.insertOrReplaceEntity(entityClass.tableName, entity, function (err, result, response) {
                 if (err) {
-                    let newMsg = {
-                        payload: {
-                            partitionKey: entityClass.partitionKey,
-                            rowKey: entityClass.rowKey,
-                        },
-                        status: "Error",
-                        message: err.name + " - " + err.toString(),
-                        stack: err.stack
+                    msg.payload = {
+                        partitionKey: entityClass.partitionKey,
+                        rowKey: entityClass.rowKey
                     };
+                    msg.status = "Error";
+                    msg.message = err.name + " - " + err.toString();
+                    msg.stack = err.stack;
 
                     node.error('Error while trying to update' + err.toString());
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.error);
                 } else {
-                    let newMsg = {
-                        payload: {
-                            partitionKey: entityClass.partitionKey,
-                            rowKey: entityClass.rowKey,
-                        },
-                        status: "OK"
+                    msg.payload = {
+                        partitionKey: entityClass.partitionKey,
+                        rowKey: entityClass.rowKey
                     };
+                    msg.status = "OK";
 
                     node.log(entityClass.partitionKey + ' updated.');
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.sent);
                 }
             });
         }
 
-        const deleteEntity = (entityClass) => {
+        const deleteEntity = (entityClass, msg) => {
             node.log('deleting entity');
 
             var entGen = Client.TableUtilities.entityGenerator;
@@ -194,28 +175,24 @@ module.exports = function (RED) {
 
             clientTableService.deleteEntity(entityClass.tableName, entity, function (err, result, response) {
                 if (err) {
-                    let newMsg = {
-                        payload: {
-                            partitionKey: entityClass.partitionKey,
-                            rowKey: entityClass.rowKey,
-                        },
-                        status: "Error",
-                        message: err.toString()
+                    msg.payload = {
+                        partitionKey: entityClass.partitionKey,
+                        rowKey: entityClass.rowKey
                     };
+                    msg.status = "Error";
+                    msg.message = err.toString();
 
-                    node.send(newMsg);
+                    node.send(msg);
                     node.error('Error while trying to delete entity:' + err.toString());
                     setStatus(statusEnum.error);
                 } else {
-                    let newMsg = {
-                        payload: {
-                            partitionKey: entityClass.partitionKey,
-                            rowKey: entityClass.rowKey,
-                        },
-                        status: "OK"
+                    msg.payload = {
+                        partitionKey: entityClass.partitionKey,
+                        rowKey: entityClass.rowKey
                     };
+                    msg.status = "OK";
 
-                    node.send(newMsg);
+                    node.send(msg);
                     node.log('entity deleted');
                     setStatus(statusEnum.sent);
                 }
@@ -223,7 +200,7 @@ module.exports = function (RED) {
         }
 
 
-        const queryEntity = (entityClass) => {
+        const queryEntity = (entityClass, msg) => {
             node.log('query entity');
 
             let top = entityClass.top ? entityClass.top : 0;
@@ -234,23 +211,19 @@ module.exports = function (RED) {
 
             clientTableService.queryEntities(entityClass.tableName, query, null, function (err, result, response) {
                 if (err) {
-                    let newMsg = {
-                        payload: entityClass,
-                        status: "Error",
-                        message: err.toString()
-                    };
+                    msg.payload = entityClass;
+                    msg.status = "Error";
+                    msg.message = err.toString();
 
                     node.error('Error while trying to save data:' + err.toString());
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.error);
                 } else {
-                    let newMsg = {
-                        payload: result.entries,
-                        status: "OK"
-                    };
+                    msg.payload = result.entries;
+                    msg.status = "OK";
 
                     node.log("queried " + entityClass.tableName + "...OK");
-                    node.send(newMsg);
+                    node.send(msg);
                     setStatus(statusEnum.sent);
                 }
             });
@@ -288,32 +261,32 @@ module.exports = function (RED) {
             switch (action) {
                 case "I":
                     node.log('Trying to insert entity');
-                    sendData(entityClass);
+                    sendData(entityClass, msg);
                     break;
                 case "R":
                     node.log('Trying to read entity');
-                    readData(entityClass);
+                    readData(entityClass, msg);
                     break;
                 case "DT":
                     node.log('Trying to delete table');
-                    deleteTable(entityClass.tableName);
+                    deleteTable(entityClass.tableName, msg);
                     break;
                 case "Q":
                     node.log('Trying to query data');
-                    queryEntity(entityClass);
+                    queryEntity(entityClass, msg);
                     break;
                 case "U":
                     node.log('trying to update entity');
-                    updateEntity(entityClass);
+                    updateEntity(entityClass, msg);
                     break;
                 case "D":
                     node.log('trying to delete entity');
-                    deleteEntity(entityClass)
+                    deleteEntity(entityClass, msg)
                     break;
                 default:
                     node.log('action was not detected');
                     node.error('action was not detected');
-                    setStatus(statusEnum.error);
+                    setStatus(statusEnum.error, msg);
                     break;
             }
         });
